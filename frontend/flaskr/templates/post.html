@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Map</title>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+  <style>
+    /* Always set the map height explicitly to define the size of the div
+     * element that contains the map. */
+    #map {
+      height: 100%;
+    }
+    /* Optional: Makes the sample page fill the window. */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+  var map;
+  function initMap() {
+    // The location of Melbourne
+    var Melbourne = {lat: -37.8136, lng: 144.9631};
+    // The map, centered at Melbourne
+    var map = new google.maps.Map(document.getElementById('map'), {
+      center: Melbourne,
+      zoom: 14
+    });
+
+    // add listener onto google map
+    google.maps.event.addListener(map, "click", function (e) {
+     placeMarker(map, e.latLng);
+    });
+    // add listener onto google map
+    google.maps.event.addListener(map, "rightclick", function (e) {
+     map.setZoom(14);
+    });
+
+    fetchAllMarkers(map); 
+    function fetchAllMarkers(map) {
+      xhttp = new XMLHttpRequest(); 
+      xhttp.open("GET", "http://localhost:3000/fetch-all", true);
+      var res = xhttp.send();
+      xhttp.onload = function (res, err) {
+        //console.log(res.target.response);
+        placeFetchedMarker(map, res.target.response);
+      }
+    }
+
+
+    function placeFetchedMarker(map, responses) {
+      x = JSON.parse(responses);
+
+      for (var i  in x){
+          var coords = i.split(",");
+          //console.log(coords);
+          var lat = parseFloat(coords[1]);
+          var long = parseFloat(coords[0]); 
+          
+          if (lat != NaN && long != NaN) {
+          // convert lat long to google maps here
+            console.log(typeof(lat));  
+            console.log(lat);
+            console.log(long);
+
+            latlng = {lat: lat, lng: long};
+            //console.log(latlng);
+            var message = x[i];
+            console.log(message);
+
+            var image = "https://i.imgur.com/kfIuC71.jpg"
+            var marker = new google.maps.Marker({
+              position : latlng, // fill in
+              map : map, 
+              animation: google.maps.Animation.DROP
+            });
+        }
+
+          // TODO: Add Message in an infowindow
+          var infowindow = attachMessageNoClick(marker, message);
+      }
+    }
+
+    function attachMessageNoClick(marker, message) {
+      var infowindow = new google.maps.InfoWindow({
+        content: message
+      });
+
+      marker.addListener('mouseover', function() {
+        infowindow.open(map, marker);
+      });
+      marker.addListener('mouseout', function() {
+        infowindow.close();
+      });
+      marker.addListener('rightclick', function() {
+        // Zoom the marker when user click on it
+        map.setZoom(16);
+        map.setCenter(marker.getPosition());
+      });
+
+      return infowindow;
+    }
+
+    function placeMarker(map, location) {
+      var result = prompt("Enter a value of comment for Marker.");
+      if (result != "" && result != null) {
+        //  block of code to be executed if the condition is true
+
+        lat = location.lat();
+        long = location.lng();
+        transactString = `http://localhost:3000/post-transaction/?lat=${lat}&long=${long}&txt=${result}`
+
+        xhttp = new XMLHttpRequest(); 
+        xhttp.open("GET", transactString, true);
+        var res = xhttp.send();
+        xhttp.onload = function (res, err) {
+          //console.log(res.target.response);
+          var marker = new google.maps.Marker({
+          position: location,
+          map: map,
+          draggable: true,
+          animation: google.maps.Animation.DROP
+        });
+        // show the message attached
+        var infowindow = attachMessageAndAddListeners(marker, result);
+        }
+
+        
+    }
+
+    function attachMessageAndAddListeners(marker, message) {
+      // Bind information
+      var infowindow = new google.maps.InfoWindow({
+        content: message
+      });
+
+      marker.addListener('mouseover', function() {
+        infowindow.open(map, marker);
+      });
+      marker.addListener('mouseout', function() {
+        infowindow.close();
+      });
+      marker.addListener('rightclick', function() {
+        // Zoom the marker when user click on it
+        map.setZoom(16);
+        map.setCenter(marker.getPosition());
+      });
+      marker.addListener('click', function() {
+        var result = prompt("Enter a new value of comment for Marker.");
+        if (result != '' && result != null) {
+          infowindow.setContent(result);
+          infowindow.open(map, marker);
+        }
+      });
+      return infowindow;
+    }
+    }
+  }
+
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVrV5t3FrHnqanqHMnPIuqn9YTZbDdqzg&callback=initMap"
+async defer></script>
+
+</body>
+</html>
